@@ -1,6 +1,29 @@
 = rugroupy
 
-Description goes here.
+rugroupy is a ruby library which interacts with mongodb allowing one to tag entities and perform queries
+to determine similarity between entities. rugroupy finds similarities by performing a series of map-reduce
+operations using mongo.  By using mongo's auto sharding capabilities rugroupy's grouping operation can 
+be distributed between multiple servers.
+
+== features
+ * find entities most similiar to a given entity
+ * find the most similiar entities over the entire entity set
+ * use javascript to include only certain tags in the grouping operation
+ * use javascript to assign custom scoring to certain tags
+ * use javascript to create dynamic tags
+
+== Examples
+
+See http://github.com/rwynn/rugroupy/tree/master/test
+
+== Requirements
+
+* Mongo http://www.mongodb.org/downloads
+* Mongo Ruby Driver http://www.mongodb.org/display/DOCS/Ruby+Language+Center#RubyLanguageCenter-RubyDriver
+
+== Install
+
+* sudo gem install rugroupy
 
 == Contributing to rugroupy
  
