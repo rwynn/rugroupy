@@ -87,6 +87,36 @@ class TestEntity < Test::Unit::TestCase
       assert doc["tags"]["likes"].member?("mongodb.org" )
       assert doc["tags"]["likes"].member?("apache.org")
     end
+    
+    should "allow non-string tag values" do
+      assert_not_nil @connection
+      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
+      e1.tag("zip", [22204, 22207])
+      e1.tag("zip", 22206)
+      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
+      assert_not_nil doc
+      assert_equal @entity_id, doc["_id"]
+      assert doc.member?("tags")
+      assert_equal 1, doc["tags"].size
+      assert_equal 3, doc["tags"]["zip"].size
+      assert doc["tags"]["zip"].member?(22206)
+      assert doc["tags"]["zip"].member?(22207)
+      assert doc["tags"]["zip"].member?(22204)
+    end
+    
+    should "allow complex tag values" do
+      assert_not_nil @connection
+      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
+      e1.tag("height", {"feet" => 5, "inches" => 10})
+      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
+      assert_not_nil doc
+      assert_equal @entity_id, doc["_id"]
+      assert doc.member?("tags")
+      assert_equal 1, doc["tags"].size
+      assert_equal 1, doc["tags"]["height"].size
+      assert_equal 5, doc["tags"]["height"][0]["feet"]
+      assert_equal 10, doc["tags"]["height"][0]["inches"]
+    end
 
     should "ensure unique tag values" do
       assert_not_nil @connection

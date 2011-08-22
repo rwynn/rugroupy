@@ -194,5 +194,36 @@ EOF
         assert results[0].member?(@entity_ids[0])
         assert results[0].member?(@entity_ids[2])
       end
+      
+      should "group by dynamic tags from complex tags" do
+        dynamicTagFunction = <<-EOF
+         function (doc) {
+           doc_id = doc._id;
+           for (tag in doc.tags) {
+             if (tag == 'height') {
+               doc.tags[tag].forEach(function(h) {
+                   if (h['feet'] >= 6) {
+                       emit({tag:"tall", value:true}, {entities: [doc_id]}); 
+                   }
+               });
+             }
+           }
+         }
+EOF
+        @entities[0].tag("height", {"feet" => 5, "inches" => 0})
+        @entities[1].tag("height", {"feet" => 6, "inches" => 1})
+        @entities[2].tag("height", {"feet" => 5, "inches" => 10})
+        @entities[3].tag("height", {"feet" => 6, "inches" => 6})
+        
+        grouper = Groupy::EntityGrouper.new(@connection[@database_name], @entity_name)
+        grouper.group(:dynamicTagFunction => dynamicTagFunction)
+
+        results = grouper.similiar(tag="tall")
+        assert_not_nil results
+        assert_equal 1, results.size
+        assert results[0].member?(@entity_ids[1])
+        assert results[0].member?(@entity_ids[3])
+      end      
+      
   end
 end

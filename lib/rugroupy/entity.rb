@@ -56,7 +56,7 @@ module Groupy
       op = add ? "$addToSet" : "$pull"
       doc = Hash.new
       field = "tags.#{tag}"
-      if value.is_a?(String)
+      unless value.is_a?(Array)
         doc[op] = { field => value }
       else
         op = "$pullAll" unless add
