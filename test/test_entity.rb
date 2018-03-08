@@ -1,152 +1,174 @@
 require 'helper'
 
-class TestEntity < Test::Unit::TestCase
-  context "an entity" do 
-    setup do
-      @database_name = "test"
-      @connection =  Mongo::Connection.new
-      @entity_name = "users"
-      @entity_id = "user1"
+class TestEntity < MiniTest::Test
+  describe 'an entity' do
+    before do
+      @database_name = 'test'
+      @connection = Mongo::Client.new('mongodb://localhost')
+      @connection.use(@database_name)
+      @database = Mongo::Database.new(@connection, @database_name)
+      @entity_name = 'users'
+      @entity_id = 'user1'
     end
 
-    teardown do
-      @connection[@database_name][@entity_name].drop()
-      @connection.drop_database(@database_name)
+    after do
+      @connection[@entity_name].drop
+      @database.drop
       @connection.close
     end
 
-    should "create an entity" do
-      assert_not_nil @connection
-      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})  
-      assert_not_nil doc
-      assert_equal @entity_id, doc["_id"]
+    describe 'create an entity' do
+      it do
+        assert !@database.nil?
+        e1 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        doc = @database[@entity_name].find('_id' => @entity_id).first
+        assert !doc.nil?
+        assert_equal @entity_id, doc['_id']
+      end
     end
 
-    should "not allow duplicate entities" do
-      assert_not_nil @connection
-      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      e2 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      cursor = @connection[@database_name][@entity_name].find()
-      assert_equal 1, cursor.count
+    describe 'not allow duplicate entities' do
+      it do
+        assert !@database.nil?
+        e1 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        e2 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        cursor = @database[@entity_name].find
+        assert_equal 1, cursor.count
+      end
     end
 
-    should "tag an entity" do
-      assert_not_nil @connection
-      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      e1.tag("likes", "mongodb.org")
-      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
-      assert_not_nil doc
-      assert_equal @entity_id, doc["_id"]
-      assert doc.member?("tags")
-      assert_equal 1, doc["tags"].size
-      assert_equal 1, doc["tags"]["likes"].size
-      assert_equal "mongodb.org", doc["tags"]["likes"][0]
+    describe 'tag an entity' do
+      it do
+        assert !@database.nil?
+        e1 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        e1.tag('likes', 'mongodb.org')
+        doc = @database[@entity_name].find('_id' => @entity_id).first
+        assert !doc.nil?
+        assert_equal @entity_id, doc['_id']
+        assert doc.member?('tags')
+        assert_equal 1, doc['tags'].size
+        assert_equal 1, doc['tags']['likes'].size
+        assert_equal 'mongodb.org', doc['tags']['likes'][0]
+      end
     end
 
-    should "validate entity has tag" do
-      assert_not_nil @connection
-      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      e1.tag("likes", "mongodb.org")
-      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
-      assert_not_nil doc
-      assert_equal @entity_id, doc["_id"]
-      assert e1.has_tag("likes", "mongodb.org")
-      assert_equal false, e1.has_tag("likes", "apache.org")
+    describe 'validate entity has tag' do
+      it do
+        assert !@database.nil?
+        e1 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        e1.tag('likes', 'mongodb.org')
+        doc = @database[@entity_name].find('_id' => @entity_id).first
+        assert !doc.nil?
+        assert_equal @entity_id, doc['_id']
+        assert e1.has_tag('likes', 'mongodb.org')
+        assert_equal false, e1.has_tag('likes', 'apache.org')
+      end
     end
 
-    should "untag an entity" do
-      assert_not_nil @connection
-      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      e1.tag("likes", "mongodb.org")
-      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
-      assert_not_nil doc
-      assert_equal @entity_id, doc["_id"]
-      assert doc.member?("tags")
-      assert_equal 1, doc["tags"].size
-      assert_equal 1, doc["tags"]["likes"].size
-      assert_equal "mongodb.org", doc["tags"]["likes"][0]
-      e1.untag("likes", "mongodb.org")
-      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
-      assert_not_nil doc
-      assert doc.member?("tags")
-      assert_equal 1, doc["tags"].size
-      assert_equal 0, doc["tags"]["likes"].size
+    describe 'untag an entity' do
+      it do
+        assert !@database.nil?
+        e1 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        e1.tag('likes', 'mongodb.org')
+        doc = @database[@entity_name].find('_id' => @entity_id).first
+        assert !doc.nil?
+        assert_equal @entity_id, doc['_id']
+        assert doc.member?('tags')
+        assert_equal 1, doc['tags'].size
+        assert_equal 1, doc['tags']['likes'].size
+        assert_equal 'mongodb.org', doc['tags']['likes'][0]
+        e1.untag('likes', 'mongodb.org')
+        doc = @database[@entity_name].find('_id' => @entity_id).first
+        assert !doc.nil?
+        assert doc.member?('tags')
+        assert_equal 1, doc['tags'].size
+        assert_equal 0, doc['tags']['likes'].size
+      end
     end
 
-    should "allow multiple tag values" do
-      assert_not_nil @connection
-      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      e1.tag("likes", ["mongodb.org", "apache.org"])
-      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
-      assert_not_nil doc
-      assert_equal @entity_id, doc["_id"]
-      assert doc.member?("tags")
-      assert_equal 1, doc["tags"].size
-      assert_equal 2, doc["tags"]["likes"].size
-      assert doc["tags"]["likes"].member?("mongodb.org" )
-      assert doc["tags"]["likes"].member?("apache.org")
-    end
-    
-    should "allow non-string tag values" do
-      assert_not_nil @connection
-      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      e1.tag("zip", [22204, 22207])
-      e1.tag("zip", 22206)
-      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
-      assert_not_nil doc
-      assert_equal @entity_id, doc["_id"]
-      assert doc.member?("tags")
-      assert_equal 1, doc["tags"].size
-      assert_equal 3, doc["tags"]["zip"].size
-      assert doc["tags"]["zip"].member?(22206)
-      assert doc["tags"]["zip"].member?(22207)
-      assert doc["tags"]["zip"].member?(22204)
-    end
-    
-    should "allow complex tag values" do
-      assert_not_nil @connection
-      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      e1.tag("height", {"feet" => 5, "inches" => 10})
-      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
-      assert_not_nil doc
-      assert_equal @entity_id, doc["_id"]
-      assert doc.member?("tags")
-      assert_equal 1, doc["tags"].size
-      assert_equal 1, doc["tags"]["height"].size
-      assert_equal 5, doc["tags"]["height"][0]["feet"]
-      assert_equal 10, doc["tags"]["height"][0]["inches"]
+    describe 'allow multiple tag values' do
+      it do
+        assert !@database.nil?
+        e1 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        e1.tag('likes', ['mongodb.org', 'apache.org'])
+        doc = @database[@entity_name].find('_id' => @entity_id).first
+        assert !doc.nil?
+        assert_equal @entity_id, doc['_id']
+        assert doc.member?('tags')
+        assert_equal 1, doc['tags'].size
+        assert_equal 2, doc['tags']['likes'].size
+        assert doc['tags']['likes'].member?('mongodb.org')
+        assert doc['tags']['likes'].member?('apache.org')
+      end
     end
 
-    should "ensure unique tag values" do
-      assert_not_nil @connection
-      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      e1.tag("likes", "mongodb.org")
-      e1.tag("likes", "mongodb.org")
-      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
-      assert_not_nil doc
-      assert_equal @entity_id, doc["_id"]
-      assert doc.member?("tags")
-      assert_equal 1, doc["tags"].size
-      assert_equal 1, doc["tags"]["likes"].size
-      assert doc["tags"]["likes"].member?("mongodb.org")
+    describe 'allow non-string tag values' do
+      it do
+        assert !@database.nil?
+        e1 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        e1.tag('zip', [22_204, 22_207])
+        e1.tag('zip', 22_206)
+        doc = @database[@entity_name].find('_id' => @entity_id).first
+        assert !doc.nil?
+        assert_equal @entity_id, doc['_id']
+        assert doc.member?('tags')
+        assert_equal 1, doc['tags'].size
+        assert_equal 3, doc['tags']['zip'].size
+        assert doc['tags']['zip'].member?(22_206)
+        assert doc['tags']['zip'].member?(22_207)
+        assert doc['tags']['zip'].member?(22_204)
+      end
     end
 
-    should "allow multiple tag names" do
-      assert_not_nil @connection
-      e1 = Groupy::Entity.new(@connection[@database_name], @entity_name, @entity_id)
-      e1.tag("likes", "mongodb.org")
-      e1.tag("languages", ["python", "c"])
-      doc = @connection[@database_name][@entity_name].find_one({"_id" => @entity_id})
-      assert_not_nil doc
-      assert_equal @entity_id, doc["_id"]
-      assert doc.member?("tags")
-      assert_equal 2, doc["tags"].size
-      assert_equal 1, doc["tags"]["likes"].size
-      assert_equal 2, doc["tags"]["languages"].size
-      assert doc["tags"]["likes"].member?("mongodb.org")
-      assert doc["tags"]["languages"].member?("python")
-      assert doc["tags"]["languages"].member?("c")
+    describe 'allow complex tag values' do
+      it do
+        assert !@database.nil?
+        e1 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        e1.tag('height', 'feet' => 5, 'inches' => 10)
+        doc = @database[@entity_name].find('_id' => @entity_id).first
+        assert !doc.nil?
+        assert_equal @entity_id, doc['_id']
+        assert doc.member?('tags')
+        assert_equal 1, doc['tags'].size
+        assert_equal 1, doc['tags']['height'].size
+        assert_equal 5, doc['tags']['height'][0]['feet']
+        assert_equal 10, doc['tags']['height'][0]['inches']
+      end
+    end
+
+    describe 'ensure unique tag values' do
+      it do
+        assert !@database.nil?
+        e1 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        e1.tag('likes', 'mongodb.org')
+        e1.tag('likes', 'mongodb.org')
+        doc = @database[@entity_name].find('_id' => @entity_id).first
+        assert !doc.nil?
+        assert_equal @entity_id, doc['_id']
+        assert doc.member?('tags')
+        assert_equal 1, doc['tags'].size
+        assert_equal 1, doc['tags']['likes'].size
+        assert doc['tags']['likes'].member?('mongodb.org')
+      end
+    end
+
+    describe 'allow multiple tag names' do
+      it do
+        assert !@database.nil?
+        e1 = Groupy::Entity.new(@database, @entity_name, @entity_id)
+        e1.tag('likes', 'mongodb.org')
+        e1.tag('languages', %w[python c])
+        doc = @database[@entity_name].find('_id' => @entity_id).first
+        assert !doc.nil?
+        assert_equal @entity_id, doc['_id']
+        assert doc.member?('tags')
+        assert_equal 2, doc['tags'].size
+        assert_equal 1, doc['tags']['likes'].size
+        assert_equal 2, doc['tags']['languages'].size
+        assert doc['tags']['likes'].member?('mongodb.org')
+        assert doc['tags']['languages'].member?('python')
+        assert doc['tags']['languages'].member?('c')
+      end
     end
   end
 end
