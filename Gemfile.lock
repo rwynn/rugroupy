@@ -57,7 +57,7 @@ GEM
     public_suffix (3.0.2)
     rack (2.2.3)
     rake (13.0.1)
-    rdoc (5.1.0)
+    rdoc (6.3.2)
     semver (1.0.1)
     shoulda (3.5.0)
       shoulda-context (~> 1.0, >= 1.0.1)
